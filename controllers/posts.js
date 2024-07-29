@@ -1,3 +1,5 @@
+const crypto = require("crypto");
+
 const Posts = require("../models/Posts");
 
 const cloudinary = require("cloudinary").v2;
@@ -80,7 +82,8 @@ const postContent = async (req, res) => {
 
 const getPosts = async (req, res) => {
   const userId = req.user.userId;
-  const posts = await Posts.find({ createdBy: userId }).sort("-createdAt");
+  //const posts = await Posts.find({ createdBy: userId }).sort("-createdAt");
+  const posts = await Posts.find({}).sort("-createdAt");
 
   console.log(posts);
   res.status(200).json({ posts, nbhits: posts.length });
@@ -113,10 +116,14 @@ const editPost = async (req, res) => {
   const userId = req.user.userId;
   const postId = req.params.id;
 
-  const { image, content, category } = req.body;
+  const { image, content, category, userID } = req.body;
 
-  if (!image || !content || !category) {
+  if (!image || !content || !category || !userID) {
     return res.status(400).json({ msg: "Input fields shouldn't be empty" });
+  }
+
+  if (userId !== userID) {
+    return res.status(401).json({ msg: "not allowed to edit" });
   }
 
   try {
@@ -160,6 +167,99 @@ const deletePost = async (req, res) => {
   }
 };
 
+//6. comments===============================================================:
+
+const postComments = async (req, res) => {
+  const postId = req.params.id;
+
+  const { comment } = req.body;
+  if (!comment) {
+    return res.status(400).json({ msg: "please leave a comment" });
+  }
+
+  //work on the date for the comment:
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  const day = new Date().getDate();
+  const month = new Date().getMonth();
+  const adjustedMonth = months[month];
+  console.log("Month:", month);
+
+  const date = new Date();
+  const year = new Date().getFullYear();
+
+  const commentDate = `${day}-${adjustedMonth}-${year} ${date.toLocaleTimeString()}`;
+  console.log("Date comment was made:", commentDate);
+
+  try {
+    const post = await Posts.findOne({ _id: postId });
+    if (!post) {
+      return res.status(404).json({ msg: `no post with id: ${postId}` });
+    }
+    // creating an id for the comments cause mongodb wont.
+    //Generate a uniqueId:
+    
+    const customizedID = crypto.randomBytes(12).toString("hex");
+    console.log(customizedID)
+
+
+    post.comments.push({
+      comments:comment,
+      timeOfComment: commentDate,
+      userId: req.user.userId,
+      name: req.user.name,
+      commentIDBYCRYPTO:customizedID  
+    });
+
+    await post.save();
+
+    res.status(201).json({ msg: "comment added", post });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json(error);
+  }
+
+  res.status(201).json({ msg: commentDate });
+};
+
+//7. getComments===============================================================:
+//this works just like getSinglePost.
+const getComments = async(req,res)=>{
+  const postId = req.params.id;
+  const userID = req.user.userId;
+  //postID: 66a77c2901509e3181ecb8a9
+  try{
+    const post = await Posts.findOne({_id:postId});
+    if(!post){
+      return res.status(404).json(`no post with id: ${postId}`)
+    };
+
+    const comments = post.comments
+    console.log(comments);
+    // const getSingleComment = post.comments.filter((comment)=>{
+    //    return comment.userId === userID
+    // })
+    // console.log(getSingleComment);
+    res.status(200).json({comments:comments})
+  }catch(error){
+    console.log(error)
+    res.status(500).json(error)
+  };
+}
+
 module.exports = {
   upLoadImage,
   postContent,
@@ -167,4 +267,6 @@ module.exports = {
   getSinglePost,
   editPost,
   deletePost,
+  postComments,
+  getComments
 };

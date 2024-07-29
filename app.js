@@ -38,7 +38,7 @@ const authRouter = require('./routes/auth');
 const postsRouter = require('./routes/posts');
 
 app.use('/api/v1/auth', authRouter);
-app.use('/api/v1/post', postsRouter);
+app.use('/api/v1/posts', postsRouter);
 
 // Error handling middleware
 const notFoundMiddleware = require('./middleware/not-found');

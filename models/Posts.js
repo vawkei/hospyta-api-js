@@ -1,3 +1,4 @@
+const { object } = require("joi");
 const mongoose = require("mongoose");
 
 const PostSchema = new mongoose.Schema(
@@ -19,11 +20,14 @@ const PostSchema = new mongoose.Schema(
       trim: true,
       required: [true, "please add a category"],
     },
-    postViews:{
-      viewCount:{
-        type:Number,
-        default:0
-      }
+    postViews: {
+      viewCount: {
+        type: Number,
+        default: 0,
+      },
+    },
+    comments: {
+      type: [Object],
     },
     createdBy: {
       type: mongoose.Types.ObjectId,
